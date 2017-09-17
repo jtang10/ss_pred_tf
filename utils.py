@@ -90,6 +90,8 @@ def generate_batch(prot_list, prot_len_list, max_seq_length=300, batch_size=4):
                                   dtype=np.float32)
         ss_labels_batch = np.zeros((batch_size, max_seq_length),
                                    dtype=np.int32)
+	mask_batch = np.zeros((batch_size, max_seq_length),
+			      dtype=np.int32)
         batch_seq_len = []
 
         for i, j in enumerate(batch_idx):
@@ -98,11 +100,12 @@ def generate_batch(prot_list, prot_len_list, max_seq_length=300, batch_size=4):
             min_idx = min(max_seq_length, protein_features.shape[0])
             proteins_batch[i, :min_idx, :] = protein_features[:min_idx, :]
             ss_labels_batch[i, :min_idx] = ss_labels[:min_idx]
+	    mask_batch[i, :min_idx] = 1
             # batch_seq_len.append(prot_len_list[j])
             batch_seq_len.append(min_idx)
 
         batch_seq_len = np.asarray(batch_seq_len, dtype=np.int32)
-        yield proteins_batch, ss_labels_batch, batch_seq_len
+        yield proteins_batch, ss_labels_batch, batch_seq_len, mask_batch
 
 def read_data(prot_list, prot_len_list, max_seq_length=300):
     """Given lists of training, validation and test datasets, return the 
@@ -111,6 +114,8 @@ def read_data(prot_list, prot_len_list, max_seq_length=300):
     num_list = len(prot_list)
     proteins_all = np.zeros((num_list, max_seq_length, 66), dtype=np.float32)
     ss_labels_all = np.zeros((num_list, max_seq_length), dtype=np.int32)
+    mask_all = np.zeros((num_list, max_seq_length),
+			  dtype=np.int32)
     seq_lens_all = []
 
     for i, protein_name in enumerate(prot_list):
@@ -118,10 +123,11 @@ def read_data(prot_list, prot_len_list, max_seq_length=300):
         min_idx = min(max_seq_length, protein_features.shape[0])
         proteins_all[i, :min_idx, :] = protein_features[:min_idx, :]
         ss_labels_all[i, :min_idx] = ss_labels[:min_idx]
+        mask_all[i, :min_idx] = 1
         seq_lens_all.append(min_idx)
     seq_lens_all = np.asarray(seq_lens_all, dtype=np.int32)
 
-    return proteins_all, ss_labels_all, seq_lens_all
+    return proteins_all, ss_labels_all, seq_lens_all, mask_all
 
 
 # Define test functions for some data preprocessing functions
