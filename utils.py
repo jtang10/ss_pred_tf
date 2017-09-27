@@ -68,7 +68,7 @@ def generate_batch(prot_list, relative_path, max_seq_length=300, batch_size=4):
                                   dtype=np.float32)
         ss_labels_batch = np.zeros((batch_size, max_seq_length),
                                    dtype=np.int32)
-        mask_batch = np.zeros((batch_size, max_seq_length), dtype=np.int32)
+        mask_batch = np.zeros((batch_size, max_seq_length), dtype=np.float32)
         batch_seq_len = []
 
         for i, j in enumerate(batch_idx):
@@ -110,7 +110,7 @@ if __name__ == '__main__':
     testList = read_list(testList_addr)
     # print(len(validList))
     # print(validList)
-    features, labels, seq_len, mask = read_protein(validList[0], elative_path, True)
+    features, labels, seq_len, mask = read_protein(validList[0], relative_path, True)
     print(features.shape)
     print(labels.shape)
     print(type(seq_len))
