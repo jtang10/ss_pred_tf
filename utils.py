@@ -11,6 +11,8 @@ validList_addr = SetOf7604Proteins_path + 'validList'
 testList_addr = SetOf7604Proteins_path + 'testList'
 casp11_path = './data/CASP11/'
 casp11List_addr = casp11_path + 'proteinList'
+casp12_path = './data/CASP12/'
+casp12List_addr = casp12_path + 'proteinList'
 
 def read_list(filename):
     """Return a list of protein name
@@ -117,17 +119,17 @@ if __name__ == '__main__':
     trainList = read_list(trainList_addr)
     validList = read_list(validList_addr)
     testList = read_list(testList_addr)
-    casp11List = read_list(casp11List_addr)
+    casp12List = read_list(casp12List_addr)
+    print(len(casp12List))
     # print(len(validList))
     # print(validList)
-    print(casp11List)
-    test_protein = casp11List[1]
-    features, labels, seq_len, mask = read_protein(test_protein, casp11_path, True, True)
+    print(casp12List)
+    test_protein = casp12List[0]
+    features, labels, seq_len, mask = read_protein(test_protein, casp12_path, expand_dims=True, CASP=False)
     print("Protein Name:", test_protein)
     print("features:", features.shape)
     print("labels:", labels.shape)
     print("seq_len:", seq_len)
-    print(type(seq_len))
     print(seq_len.shape)
     print(mask.shape)
 
