@@ -5,10 +5,12 @@ import time
 import math
 import numpy as np
 
-relative_path = './data/SetOf7604Proteins/'
-trainList_addr = relative_path + 'trainList'
-validList_addr = relative_path + 'validList'
-testList_addr = relative_path + 'testList'
+SetOf7604Proteins_path = './data/SetOf7604Proteins/'
+trainList_addr = SetOf7604Proteins_path + 'trainList'
+validList_addr = SetOf7604Proteins_path + 'validList'
+testList_addr = SetOf7604Proteins_path + 'testList'
+casp11_path = './data/CASP11/'
+casp11List_addr = casp11_path + 'proteinList'
 
 def read_list(filename):
     """Return a list of protein name
@@ -20,7 +22,7 @@ def read_list(filename):
             proteins_names.append(protein_name)
     return proteins_names
 
-def read_protein(prot_name, relative_path, expand_dims=False):
+def read_protein(prot_name, relative_path, expand_dims=False, CASP=False):
     """Given a protein name, return a matrix of its features, corresponding
        second structure information, sequence length and mask.
 
@@ -29,29 +31,36 @@ def read_protein(prot_name, relative_path, expand_dims=False):
     """
     ss = ['L', 'B', 'E', 'G', 'I', 'H', 'S', 'T']
     dict_ss = {key: value for (key, value) in zip(ss, range(8))}
-    prot_addr = relative_path + '66FEAT/' + prot_name + '.66feat'
-    ss_addr = relative_path + 'Angles/' + prot_name + '.ang'
-    prot_mat = np.loadtxt(prot_addr)
+    features_addr = relative_path + '66FEAT/' + prot_name + '.66feat'
+    labels_addr = relative_path + 'Angles/' + prot_name + '.ang'
+    protein_features = np.loadtxt(features_addr)
+    protein_labels = []
+    delete_idx = []
 
-    ss_mat = []
-    with open(ss_addr) as f:
+    with open(labels_addr) as f:
         next(f)
         for i, line in enumerate(f):
             line = line.split('\t')
             if line[0] == '0':
-                ss_mat.append(dict_ss[line[3]])
+                # 0 means the current ss label exists.
+                protein_labels.append(dict_ss[line[3]])
+            else:
+                # 1 means current residue has no ss label and according features will be removed.
+                delete_idx.append(i)
 
-    ss_mat = np.array(ss_mat).transpose()
-    seq_len = ss_mat.shape[0]
+    if CASP:
+        protein_features = np.delete(protein_features, delete_idx, axis=0)
+    protein_labels = np.array(protein_labels).transpose()
+    seq_len = protein_labels.shape[0]
     mask = np.ones((seq_len,), dtype=np.float32)
 
     if expand_dims:
-        prot_mat = np.expand_dims(prot_mat, axis=0)
-        ss_mat = np.expand_dims(ss_mat, axis=0)
+        protein_features = np.expand_dims(protein_features, axis=0)
+        protein_labels = np.expand_dims(protein_labels, axis=0)
         seq_len = np.array([seq_len])
         mask = np.expand_dims(mask, axis=0)
 
-    return prot_mat, ss_mat, seq_len, mask
+    return protein_features, protein_labels, seq_len, mask
 
 
 def generate_batch(prot_list, relative_path, max_seq_length=300, batch_size=4):
@@ -108,11 +117,16 @@ if __name__ == '__main__':
     trainList = read_list(trainList_addr)
     validList = read_list(validList_addr)
     testList = read_list(testList_addr)
+    casp11List = read_list(casp11List_addr)
     # print(len(validList))
     # print(validList)
-    features, labels, seq_len, mask = read_protein(validList[0], relative_path, True)
-    print(features.shape)
-    print(labels.shape)
+    print(casp11List)
+    test_protein = casp11List[1]
+    features, labels, seq_len, mask = read_protein(test_protein, casp11_path, True, True)
+    print("Protein Name:", test_protein)
+    print("features:", features.shape)
+    print("labels:", labels.shape)
+    print("seq_len:", seq_len)
     print(type(seq_len))
     print(seq_len.shape)
     print(mask.shape)
