@@ -42,12 +42,14 @@ class BiGRU(object):
         self.labels_placeholder = tf.placeholder(tf.int32, shape=[None, None], name='labels_placeholder')
         self.lengths_placeholder = tf.placeholder(tf.int32, shape=[None,], name='lengths_placeholder')
         self.masks_placeholder = tf.placeholder(tf.float32, shape=[None, None], name='masks_placeholder')
+        self.phase = tf.placeholder(tf.bool, name='phase')
 
-    def create_feed_dict(self, inputs_batch, labels_batch, lengths_batch, masks_batch):
+    def create_feed_dict(self, inputs_batch, labels_batch, lengths_batch, masks_batch, phase=True):
         feed_dict = {self.inputs_placeholder: inputs_batch,
                      self.labels_placeholder: labels_batch,
                      self.lengths_placeholder: lengths_batch,
-                     self.masks_placeholder: masks_batch}
+                     self.masks_placeholder: masks_batch,
+                     self.phase: phase}
         return feed_dict
 
     def GRUCell(self, dropout, state_size):
@@ -69,7 +71,8 @@ class BiGRU(object):
         seq_len_shp = tf.shape(outputs)[1]
         outputs = tf.reshape(outputs, [-1, self.state_size * 2])
         fc1 = fully_connected(outputs, self.state_size) # , normalizer=batch_norm
-        fc2 = fully_connected(fc1, self.num_classes, activation_fn=None)
+        bn1 = batch_norm(fc1, center=True, scale=True, is_training=self.phase)
+        fc2 = fully_connected(bn1, self.num_classes, activation_fn=None)
         pred = tf.reshape(fc2, [batch_size_shp, seq_len_shp, self.num_classes])
         return pred
 
@@ -98,7 +101,9 @@ class BiGRU(object):
         self.grad_norm = tf.global_norm(grads)
         grads_and_vars = [(grads[i], variables[i]) for i in range(len(grads))]
         # apply gradients and make trainable function
-        train_op = optimizer.apply_gradients(grads_and_vars, global_step=global_step)
+        update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
+        with tf.control_dependencies(update_ops):
+            train_op = optimizer.apply_gradients(grads_and_vars, global_step=global_step)
         return train_op
 
     def train_on_batch(self, sess, inputs_batch, labels_batch, lengths_batch, masks_batch):
@@ -107,7 +112,7 @@ class BiGRU(object):
         return loss, grad_norm
 
     def evaluate_on_batch(self, sess, inputs_batch, labels_batch, lengths_batch, masks_batch):
-        feed = self.create_feed_dict(inputs_batch, labels_batch, lengths_batch, masks_batch)
+        feed = self.create_feed_dict(inputs_batch, labels_batch, lengths_batch, masks_batch, phase=False)
         accuracy, loss = sess.run([self.accuracy, self.loss], feed_dict=feed)
         return accuracy, loss
 
