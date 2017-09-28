@@ -72,7 +72,6 @@ with tf.Session() as sess:
     while samples_processed < samples_to_process:
         loss_train, grad_norm_train = rnn.train_on_batch(sess, X_train, y_train, len_train, mask_train)
         samples_processed += batch_size
-        print("{} samples processed".format(samples_processed))
         grads_norm += [grad_norm_train]
 
         #validation data
